@@ -1,3 +1,4 @@
+#include <vector>
 #include <iostream>
 #include <fstream>
 using namespace std;
@@ -39,24 +40,27 @@ int mandelbrot(complexNumber center, complexNumber point,
 int main(void){
 
     const char* magicIdentifyer = "P2";
-    const int width = 2048;
+    const int width = 4096;
     const int maxIter = 100;
 
-    uint8_t rawImage[width][width];
+    vector<uint8_t> rawImage(width * width);
 
     complexNumber center = {0, 0};
 
+    #pragma omp parallel for collapse(2) schedule(dynamic)
     for(int col = 0; col < width; col++){
         for(int row = 0; row < width; row++){
 
-            float startingX = map_min_max(0, width, -1.70, -1.40, row);
-            float startingI = map_min_max(0, width, -0.2, 0.2, col);
+            float startingX = map_min_max(0, width, -2.75, 1, row);
+            float startingI = map_min_max(0, width, -1, 1, col);
 
             complexNumber startingPoint = {startingX, startingI};
 
             int calculated = mandelbrot(startingPoint, center, 0, maxIter);
 
-            rawImage[col][row] = map_to_byte(maxIter, calculated);
+            int index = row * width + col;
+
+            rawImage[index] = map_to_byte(maxIter, calculated);
         }
     }
 
@@ -68,7 +72,8 @@ int main(void){
 
         for(int col = 0; col < width; col++){
             for(int row = 0; row < width; row++){
-                file << (int)rawImage[col][row] << " ";
+                int index = row * width + col;
+                file << (int)rawImage[index] << " ";
             }
             file << "\n";
         }
